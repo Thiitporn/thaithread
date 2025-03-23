@@ -1,161 +1,195 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useParams } from "react-router-dom";
-import { ShoppingCartOutlined, PlusOutlined, MinusOutlined } from "@ant-design/icons";
-import { CartContext, UserContext } from "../App";  
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ShoppingCartOutlined,
+  PlusOutlined,
+  MinusOutlined,
+} from "@ant-design/icons";
+import { CartContext, UserContext } from "../App";
+import Navbar from "../components/Navbar";
+import { getProductById, addItemToCart } from "../services/apiService"; // Adjust API call
+import PropTypes from "prop-types";
 
 const ProductDetail = () => {
-    const { id } = useParams();
-    const { cart, setCart } = useContext(CartContext);
-    const { user } = useContext(UserContext); // ✅ ตรวจสอบว่าผู้ใช้ล็อกอินหรือไม่
+  const { id } = useParams(); // Get id from URL using useParams
+  const { cart, setCart } = useContext(CartContext);
 
-    const [quantity, setQuantity] = useState(1);
-    const [selectedOption, setSelectedOption] = useState(null);
-    const [showModal, setShowModal] = useState(false);
-    const [modalMessage, setModalMessage] = useState("");
+  const navigate = useNavigate(); // For navigation after adding to cart
 
-    const product = {
-        id: id,
-        name: "กางเกงขาบานผ้าพิมพ์ทอง",
-        description: "ผ้าพิมพ์ทอง ผ้าคุณภาพสูง ใส่สบาย ไม่ระคายเคือง",
-        price: 159,
-        options: [
-            { id: "01", image: "/src/assets/option01.jpg", stock: 50 },
-            { id: "02", image: "/src/assets/option02.jpg", stock: 30 },
-            { id: "03", image: "/src/assets/option03.jpg", stock: 20 },
-        ],
+  const [quantity, setQuantity] = useState(1);
+  const [product, setProduct] = useState(null); // Removed selectedOption
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Fetch product details based on the id from the URL
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setLoading(true);
+      try {
+        const data = await getProductById(id); // Fetch product details by ID
+        setProduct(data);
+      } catch (err) {
+        setError("❌ ไม่สามารถโหลดข้อมูลสินค้าได้");
+      }
+      setLoading(false);
     };
 
-    useEffect(() => {
-        if (product.options.length > 0) {
-            setSelectedOption(product.options[0]);
-        }
-    }, []);
+    fetchProduct();
+  }, [id]);
 
-    const stockAvailable = selectedOption ? selectedOption.stock : 0;
+  const increaseQuantity = () => {
+    if (quantity < product.stock) {
+      setQuantity(quantity + 1);
+    }
+  };
 
-    const increaseQuantity = () => {
-        if (quantity < stockAvailable) {
-            setQuantity(quantity + 1);
-        }
-    };
+  const decreaseQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(quantity - 1);
+    }
+  };
 
-    const decreaseQuantity = () => {
-        if (quantity > 1) {
-            setQuantity(quantity - 1);
-        }
-    };
+  const showModalPopup = (message) => {
+    setModalMessage(message);
+    setShowModal(true);
+    setTimeout(() => setShowModal(false), 3000);
+  };
 
-    const showModalPopup = (message) => {
-        setModalMessage(message);
-        setShowModal(true);
-        setTimeout(() => setShowModal(false), 3000);
-    };
+  const userid = localStorage.getItem("userId");
 
-    const addToCart = () => {
-        if (!user) {
-            showModalPopup("กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าในตะกร้า !");
-            return;
-        }
+  const addToCart = async () => {
+    if (!userid) {
+      showModalPopup("กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้าในตะกร้า !");
+      return;
+    }
 
-        if (!selectedOption) {
-            showModalPopup("กรุณาเลือกตัวเลือกสินค้าก่อน !");
-            return;
-        }
+    if (quantity > product.stock) {
+      showModalPopup("สินค้าไม่เพียงพอ !");
+      return;
+    }
 
-        if (quantity > stockAvailable) {
-            showModalPopup("สินค้าไม่เพียงพอ !");
-            return;
-        }
+    // Update local cart
+    const existingItem = cart.find((item) => item.id === product._id);
+    if (existingItem) {
+      setCart(
+        cart.map((item) =>
+          item.id === product._id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        )
+      );
+    } else {
+      setCart([
+        ...cart,
+        {
+          ...product,
+          quantity,
+          stock: product.stock - quantity,
+        },
+      ]);
+    }
 
-        product.options = product.options.map(option =>
-            option.id === selectedOption.id ? { ...option, stock: option.stock - quantity } : option
-        );
+    // Add item to cart in the backend
+    try {
+      await addItemToCart(userid, id, quantity); // Ensure the API endpoint is correct
+      showModalPopup(
+        `เพิ่มสินค้า ${product.name} x${quantity} ลงในตะกร้าแล้ว !`
+      );
 
-        const existingItem = cart.find(item => item.id === product.id && item.optionId === selectedOption.id);
-        if (existingItem) {
-            setCart(cart.map(item => item.id === product.id && item.optionId === selectedOption.id
-                ? { ...item, quantity: item.quantity + quantity }
-                : item
-            ));
-        } else {
-            setCart([...cart, { ...product, optionId: selectedOption.id, quantity, stock: stockAvailable - quantity }]);
-        }
+      // Navigate to CartPage
+      navigate("/cart");
+    } catch (error) {
+      showModalPopup("เกิดข้อผิดพลาดในการเพิ่มสินค้าในตะกร้า");
+    }
+  };
 
-        showModalPopup(` เพิ่มสินค้า ${product.name} (ตัวเลือก ${selectedOption.id}) x${quantity} ลงในตะกร้าแล้ว !`);
-    };
+  if (loading) return <p>⏳ กำลังโหลดข้อมูลสินค้า...</p>;
 
-    return (
-        <div className="p-8 flex flex-col md:flex-row gap-12 items-center justify-center">
-            <div className="w-full md:w-1/2 flex flex-col items-center">
-                <img src={selectedOption ? selectedOption.image : ""} 
-                    alt={product.name} 
-                    className="w-80 md:w-96 object-cover rounded-lg shadow-lg border border-gray-300" 
-                />
-            </div>
+  if (error) return <p>{error}</p>;
 
-            <div className="w-full md:w-1/2 flex flex-col">
-                <h1 className="text-2xl font-bold text-[#6D2323]">{product.name}</h1>
-                <p className="text-gray-600 mt-2">{product.description}</p>
-                <p className="text-3xl font-bold text-[#A31D1D] mt-4">฿{product.price}</p>
+  if (!product) return null;
 
-                <div className="mt-4">
-                    <h3 className="font-semibold text-gray-700">เลือกสินค้า :</h3>
-                    <div className="grid grid-cols-4 gap-2 mt-2">
-                        {product.options.map((option) => (
-                            <div 
-                                key={option.id} 
-                                className={`border-2 bg-white rounded-md p-1 cursor-pointer transition duration-300 hover:shadow-md 
-                                    ${selectedOption && selectedOption.id === option.id ? 'border-[#A31D1D] shadow-lg' : 'border-gray-300'}`}
-                                onClick={() => setSelectedOption(option)}
-                            >
-                                <img src={option.image} alt={option.id} className="w-12 h-12 object-cover rounded-md mx-auto" />
-                                <p className="text-center text-xs font-bold mt-1 text-[#6D2323]">{option.id}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="mt-6 flex items-center gap-4">
-                    <h3 className="font-semibold text-gray-700">จำนวน :</h3>
-                    <div className="flex items-center border-2 border-gray-300 rounded-lg">
-                        <button className="px-4 py-2 bg-gray-200 hover:bg-gray-300 transition rounded-l-lg" onClick={decreaseQuantity}>
-                            <MinusOutlined />
-                        </button>
-                        <span className="px-6 text-lg font-bold text-black">{quantity}</span>
-                        <button className="px-4 py-2 bg-gray-200 hover:bg-gray-300 transition rounded-r-lg" onClick={increaseQuantity}>
-                            <PlusOutlined />
-                        </button>
-                    </div>
-                    <span className="text-gray-700 text-sm ml-2">มีสินค้าทั้งหมด {stockAvailable} ชิ้น</span>
-                </div>
-
-                <div className="mt-6 flex flex-col gap-3">
-                    <button 
-                        onClick={addToCart} 
-                        disabled={!user} 
-                        className={`w-full py-3 text-white text-lg font-semibold rounded-lg flex items-center justify-center gap-2 transition shadow-md
-                            ${user ? 'bg-[#28A745] hover:bg-[#218838]' : 'bg-gray-400 cursor-not-allowed'}`}
-                    >
-                        <ShoppingCartOutlined />
-                        เพิ่มลงตะกร้า
-                    </button>
-
-                    {!user && (
-                        <p className="text-center text-red-600 mt-2 text-sm">
-                            กรุณาเข้าสู่ระบบเพื่อเพิ่มสินค้าในตะกร้า
-                        </p>
-                    )}
-                </div>
-            </div>
-
-            {showModal && (
-                <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded-lg p-4 flex items-center gap-3">
-                    <ShoppingCartOutlined className="text-green-600 text-xl" />
-                    <span className="text-black font-semibold">{modalMessage}</span>
-                </div>
-            )}
+  return (
+    <>
+      <Navbar />
+      <div className="p-8 flex flex-col md:flex-row gap-12 items-center justify-center">
+        <div className="w-full md:w-1/2 flex flex-col items-center">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-80 md:w-96 object-cover rounded-lg shadow-lg border border-gray-300"
+          />
         </div>
-    );
+
+        <div className="w-full md:w-1/2 flex flex-col">
+          <h1 className="text-2xl font-bold text-[#6D2323]">{product.name}</h1>
+          <p className="text-gray-600 mt-2">{product.description}</p>
+          <p className="text-3xl font-bold text-[#A31D1D] mt-4">
+            ฿{product.price}
+          </p>
+
+          <div className="mt-6 flex items-center gap-4">
+            <h3 className="font-semibold text-gray-700">จำนวน :</h3>
+            <div className="flex items-center border-2 border-gray-300 rounded-lg">
+              <button
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 transition rounded-l-lg"
+                onClick={decreaseQuantity}
+              >
+                <MinusOutlined />
+              </button>
+              <span className="px-6 text-lg font-bold text-black">
+                {quantity}
+              </span>
+              <button
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 transition rounded-r-lg"
+                onClick={increaseQuantity}
+              >
+                <PlusOutlined />
+              </button>
+            </div>
+            <span className="text-gray-700 text-sm ml-2">
+              มีสินค้าทั้งหมด {product.stock} ชิ้น
+            </span>
+          </div>
+
+          <div className="mt-6 flex flex-col gap-3">
+            <button
+              onClick={addToCart}
+              disabled={!userid}
+              className={`w-full py-3 text-white text-lg font-semibold rounded-lg flex items-center justify-center gap-2 transition shadow-md
+                            ${
+                              userid
+                                ? "bg-[#28A745] hover:bg-[#218838]"
+                                : "bg-gray-400 cursor-not-allowed"
+                            }`}
+            >
+              <ShoppingCartOutlined />
+              เพิ่มลงตะกร้า
+            </button>
+
+            {!userid && (
+              <p className="text-center text-red-600 mt-2 text-sm">
+                กรุณาเข้าสู่ระบบเพื่อเพิ่มสินค้าในตะกร้า
+              </p>
+            )}
+          </div>
+        </div>
+
+        {showModal && (
+          <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded-lg p-4 flex items-center gap-3">
+            <ShoppingCartOutlined className="text-green-600 text-xl" />
+            <span className="text-black font-semibold">{modalMessage}</span>
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+ProductDetail.propTypes = {
+  id: PropTypes.string, // Removed the prop validation as the id is now retrieved from URL
 };
 
 export default ProductDetail;
