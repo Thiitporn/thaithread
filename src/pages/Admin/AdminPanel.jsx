@@ -26,29 +26,29 @@ const AdminPanel = () => {
 
   // Fetch users, products, and orders on component mount
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const usersData = await getAllUsers(); // Fetch all users
-        setUsers(usersData);
-
-        const ordersData = await getOrder(); // Fetch all orders
-        setOrders(ordersData);
-
-        const productsData = await getAllProducts(); // Fetch all products
-        setProducts(productsData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
     fetchData();
   }, []);
+  const fetchData = async () => {
+    try {
+      const usersData = await getAllUsers(); // Fetch all users
+      setUsers(usersData);
+
+      const ordersData = await getOrder(); // Fetch all orders
+      setOrders(ordersData);
+
+      const productsData = await getAllProducts(); // Fetch all products
+      setProducts(productsData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
 
   // ✅ ลบผู้ใช้
   const handleDeleteUser = async (id) => {
     try {
       await deleteUser(id); // Call the deleteUser API function
       setUsers(users.filter((user) => user.id !== id)); // Update local state
+      fetchData();
     } catch (error) {
       console.error("Error deleting user:", error);
     }

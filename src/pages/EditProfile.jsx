@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { findUserById, updateProfile } from "../services/apiService"; // Assuming API functions are in apiService
+import {
+  findUserById,
+  updateProfile,
+  getUserOrders,
+} from "../services/apiService"; // Assuming API functions are in apiService
 import Navbar from "../components/Navbar";
 
 const EditProfile = () => {
@@ -12,6 +16,10 @@ const EditProfile = () => {
     email: "",
   });
 
+  // State variables for orders
+  const [orders, setOrders] = useState([]);
+
+  // Error and success state
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -21,13 +29,16 @@ const EditProfile = () => {
     if (userId) {
       const fetchUserData = async () => {
         try {
-          // Call the API to fetch user details
+          // Fetch user details
           const response = await findUserById(userId);
-          // Set user data in state
           setUser({
             name: response.name,
             email: response.email,
           });
+
+          // Fetch user orders
+          const ordersResponse = await getUserOrders(userId);
+          setOrders(ordersResponse); // Set user orders
         } catch (err) {
           setError("ไม่สามารถดึงข้อมูลผู้ใช้ได้");
         }
@@ -46,14 +57,12 @@ const EditProfile = () => {
     try {
       const userId = localStorage.getItem("userId");
 
-      console.log(user.name, user.email);
-
       // Call the API to update the profile (without phone)
       await updateProfile(userId, user.name, user.email);
-      localStorage.setItem("user", JSON.stringify(user.name));
+      localStorage.setItem("user", user.name);
       setSuccess("บันทึกข้อมูลสำเร็จ!");
 
-      setTimeout(() => navigate("/login"), 2000);
+      setTimeout(() => navigate("/edit-profile"), 2000);
     } catch (err) {
       setError("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
     }
@@ -113,6 +122,33 @@ const EditProfile = () => {
               บันทึกข้อมูล
             </button>
           </form>
+
+          {/* Display User's Orders */}
+          <div className="mt-6">
+            <h2 className="text-xl font-bold text-[#6D2323]">
+              คำสั่งซื้อของคุณ
+            </h2>
+            {orders.length === 0 ? (
+              <p className="text-center text-gray-600">ยังไม่มีคำสั่งซื้อ</p>
+            ) : (
+              <ul className="mt-4">
+                {orders.map((order) => (
+                  <li
+                    key={order.id}
+                    className="p-3 mb-2 bg-[#FFF1E0] rounded-md shadow-md"
+                  >
+                    <p className="text-[#6D2323] font-semibold">
+                      หมายเลขคำสั่งซื้อ: {order.orderNumber}
+                    </p>
+                    <p className="text-gray-700">
+                      วันที่สั่งซื้อ: {order.date}
+                    </p>
+                    <p className="text-gray-700">สถานะ: {order.status}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </>

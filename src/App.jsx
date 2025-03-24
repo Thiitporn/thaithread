@@ -1,9 +1,5 @@
 import { useState, useEffect, createContext } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Products from "./pages/Products";
@@ -28,7 +24,7 @@ function App() {
   const [user, setUser] = useState({
     name: "",
     role: "",
-    id: ""
+    id: "",
   });
 
   useEffect(() => {
@@ -58,21 +54,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/edit-profile" element={
-              <ProtectedRoute allowedRoles={["customer", "merchant", "admin"]}>
-                <EditProfile />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/dashboard" element={
-              <ProtectedRoute allowedRoles={["admin"]}>
-                <AdminPanel />
-              </ProtectedRoute>
-            } />
-            <Route path="/store-owner" element={
-              <ProtectedRoute allowedRoles={["merchant"]}>
-                <StoreOwnerPage />
-              </ProtectedRoute>
-            } />
+            <Route path="/edit-profile" element={<EditProfile />} />
+            <Route path="/admin/dashboard" element={<AdminPanel />} />
+            <Route path="/store-owner" element={<StoreOwnerPage />} />
           </Routes>
         </Router>
       </CartContext.Provider>

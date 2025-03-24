@@ -56,6 +56,12 @@ export const addProduct = async (productData) => {
   return data;
 };
 
+// Update product
+export const updateProduct = async (id, productData) => {
+  const { data } = await api.patch(`/products/${id}`, productData);
+  return data;
+};
+
 // 🔹 CART
 // ดึงข้อมูลตะกร้าสินค้าของผู้ใช้
 export const getUserCart = async (userId) => {
@@ -71,7 +77,11 @@ export const getUserCart = async (userId) => {
 // เพิ่มสินค้าลงตะกร้า
 export const addToCart = async (userId, productId, quantity) => {
   try {
-    const { data } = await api.post("/cart/add", { userId, productId, quantity });
+    const { data } = await api.post("/cart/add", {
+      userId,
+      productId,
+      quantity,
+    });
     return data;
   } catch (error) {
     console.error("❌ เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตะกร้า:", error);
@@ -79,13 +89,13 @@ export const addToCart = async (userId, productId, quantity) => {
   }
 };
 
-// ลบสินค้าออกจากตะกร้า 
+// ลบสินค้าออกจากตะกร้า
 export const removeFromCart = async (userId, productId) => {
   try {
     await api.delete(`/cart/${userId}/${productId}`);
   } catch (error) {
     console.error("❌ เกิดข้อผิดพลาดในการลบสินค้าออกจากตะกร้า:", error);
-    throw error; 
+    throw error;
   }
 };
 
@@ -93,7 +103,7 @@ export const removeFromCart = async (userId, productId) => {
 // สร้างคำสั่งซื้อ
 export const placeOrder = async (userId, totalPrice) => {
   if (!userId || !totalPrice) {
-    throw new Error("❌ ข้อมูลไม่ครบถ้วน: ต้องระบุ userId และ totalPrice"); 
+    throw new Error("❌ ข้อมูลไม่ครบถ้วน: ต้องระบุ userId และ totalPrice");
   }
 
   try {
@@ -105,7 +115,7 @@ export const placeOrder = async (userId, totalPrice) => {
       },
       {
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
       }
     );
@@ -243,7 +253,7 @@ export const deleteUser = async (id) => {
   try {
     const { data } = await api.delete(`/auth/delete/${id}`);
     return data;
-  } catch (error)    {
+  } catch (error) {
     console.error("Error deleting user:", error);
     throw error;
   }

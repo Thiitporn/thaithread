@@ -11,16 +11,16 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(""); 
+    setError("");
 
     try {
       const userData = await loginUser({ email, password });
-      
+
       // เก็บข้อมูลแยกส่วนใน localStorage
-      localStorage.setItem("userName", userData.user.name);
-      localStorage.setItem("userRole", userData.user.role);
+      localStorage.setItem("user", userData.user.name);
+      localStorage.setItem("role", userData.user.role);
       localStorage.setItem("userId", userData.user._id);
-      
+
       // ตรวจสอบ role และนำทางไปยังหน้าที่เหมาะสม
       if (userData.user.role === "admin") {
         navigate("/admin/dashboard");
