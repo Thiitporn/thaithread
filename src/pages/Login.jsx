@@ -5,24 +5,23 @@ import Navbar from "../components/Navbar";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [userData, setUserData] = useState([]);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(""); // Reset error message
+    setError(""); 
 
     try {
       const userData = await loginUser({ email, password });
-      setUserData(userData);
-      localStorage.setItem("user", JSON.stringify(userData.user.name));
-      localStorage.setItem("role", JSON.stringify(userData.user.role));
+      
+      // เก็บข้อมูลแยกส่วนใน localStorage
+      localStorage.setItem("userName", userData.user.name);
+      localStorage.setItem("userRole", userData.user.role);
       localStorage.setItem("userId", userData.user._id);
-
-      // Then checkout role in localstorage admin to go to admin panel customer to go to products merchant to go to store owner
+      
+      // ตรวจสอบ role และนำทางไปยังหน้าที่เหมาะสม
       if (userData.user.role === "admin") {
         navigate("/admin/dashboard");
       } else if (userData.user.role === "customer") {

@@ -8,10 +8,17 @@ import {
   CreditCardOutlined,
   CopyOutlined,
   ShoppingCartOutlined,
+  StopOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
+  CloseCircleOutlined,
+  InboxOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { removeItemFromCart, placeOrder } from "../services/apiService"; // Add API function
+import { removeItemFromCart, placeOrder, validateSlip } from "../services/apiService"; // Add API function
+import { message } from "antd"; // To show notifications
 
 const CartPage = () => {
   const { cart, setCart } = useContext(CartContext);
@@ -19,31 +26,34 @@ const CartPage = () => {
   const [slipFile, setSlipFile] = useState(null);
   const [error, setError] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
+  const [fileError, setFileError] = useState("");
+  const [isValidatingSlip, setIsValidatingSlip] = useState(false);
   const navigate = useNavigate();
 
-  // Bank account details
+  // ข้อมูลบัญชีธนาคาร
   const ownerBankDetails = {
     bankName: "ธนาคารกสิกรไทย (KBank)",
     accountNumber: "067-395003-5",
     accountName: "ฐิติพร กัณหอัครพันธ์",
   };
 
-  // Function to copy account number
+  // ฟังก์ชันสำหรับคัดลอกเลขบัญชี
   const copyAccountNumber = () => {
     navigator.clipboard
       .writeText(ownerBankDetails.accountNumber)
       .then(() => {
         setCopySuccess(true);
-        setTimeout(() => setCopySuccess(false), 2000); // Hide message after 2 seconds
+        setTimeout(() => setCopySuccess(false), 2000); // ซ่อนข้อความหลังจาก 2 วินาที
       })
       .catch((err) => console.error("คัดลอกล้มเหลว", err));
   };
 
-  // Increase item quantity in the cart
-  const increaseQuantity = (id, optionId) => {
-    setCart(
-      cart.map((item) =>
-        item.id === id && item.optionId === optionId
+  // เพิ่มจำนวนสินค้าในตะกร้า
+  const increaseQuantity = (id) => {
+    console.log("Increase quantity of item with ID:", id);
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item._id === id
           ? {
               ...item,
               quantity:
@@ -54,56 +64,118 @@ const CartPage = () => {
     );
   };
 
-  // Decrease item quantity in the cart
-  const decreaseQuantity = (id, optionId) => {
-    setCart(
-      cart
+  // ลดจำนวนสินค้าในตะกร้า
+  const decreaseQuantity = (id) => {
+    setCart((prevCart) =>
+      prevCart
         .map((item) =>
-          item.id === id && item.optionId === optionId
+          item._id === id
             ? { ...item, quantity: Math.max(0, item.quantity - 1) }
             : item
         )
-        .filter((item) => item.quantity > 0) // Remove items with quantity = 0
+        .filter((item) => item.quantity > 0) // ลบรายการที่มีจำนวน = 0
     );
   };
 
-  // Remove item from cart
-  const removeFromCart = async (id, optionId) => {
+  // ลบสินค้าออกจากตะกร้า
+  const removeFromCart = async (id) => {
     try {
-      // Remove from local state
-      const updatedCart = cart.filter(
-        (item) => !(item.id === id && item.optionId === optionId)
-      );
+      // ลบสินค้าออกจากตะกร้า (local state)
+      const updatedCart = cart.filter((item) => item._id !== id);
       setCart(updatedCart);
 
-      // Remove from backend (call API)
-      if (user) {
-        await removeItemFromCart(user.id, id);
-      }
+      const userId = localStorage.getItem("userId");
+      await removeItemFromCart(userId, id);
     } catch (error) {
-      setError("❌ ไม่สามารถลบสินค้าจากตะกร้าได้");
+      setError(
+        <span>
+          <StopOutlined /> ไม่สามารถลบสินค้าจากตะกร้าได้ <StopOutlined />
+        </span>
+      );
     }
   };
 
-  // Calculate total amount
+  // คำนวณยอดรวมทั้งหมด
   const totalAmount = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
   const userid = localStorage.getItem("userId");
 
-  // Handle the checkout (place order)
+  const validateFile = (file) => {
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!validTypes.includes(file.type)) {
+      setFileError(<span><CloseCircleOutlined /> กรุณาอัพโหลดไฟล์รูปภาพ (JPG, PNG เท่านั้น)</span>);
+      return false;
+    }
+
+    if (file.size > maxSize) {
+      setFileError(<span><CloseCircleOutlined /> ขนาดไฟล์ต้องไม่เกิน 5MB</span>);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setFileError("");
+    
+    if (file && validateFile(file)) {
+      setSlipFile(file);
+      message.success({
+        content: "อัพโหลดสลิปสำเร็จ",
+        icon: <CheckCircleOutlined />
+      });
+    } else {
+      e.target.value = null;
+      setSlipFile(null);
+    }
+  };
+
+  // จัดการการชำระเงิน (สร้างคำสั่งซื้อ)
   const handleCheckout = async () => {
+    if (!slipFile) {
+      setError(<span><WarningOutlined /> กรุณาแนบหลักฐานการชำระเงิน</span>);
+      return;
+    }
+
     try {
-      const response = await placeOrder("67dbdf30039484bdcd3558bb", 123);
-      console.log(response); // เพิ่มการแสดงผล response ที่ได้จาก API
-      if (response.message === "Order placed successfully") {
-        // Order placed successfully
-        setCart([]); // Clear cart after placing the order
-        navigate("/orders"); // Redirect to order history page
+      setIsValidatingSlip(true);
+      setError("");  // ลบข้อความ error ออก
+
+      // เรียกใช้ validateSlip เพื่อตรวจสอบสลิปการชำระเงิน
+      const slipValidationResponse = await validateSlip(slipFile); // เรียกใช้งาน validateSlip
+
+      // ถ้าสลิปถูกต้อง
+      if (slipValidationResponse.status === "valid") {
+        // ส่งคำสั่งซื้อ
+        const response = await placeOrder(userid, totalAmount, slipFile, cart);
+
+        if (response.message === "Order placed successfully") {
+          setCart([]); // ล้างตะกร้า
+          // แสดงข้อความสำเร็จ
+          setError(
+            <p className="text-green-600">
+              <CheckCircleOutlined className="text-green-600" /> ชำระเงินเสร็จสิ้น
+            </p>
+          );
+          setTimeout(() => {
+            navigate('/order-history');
+          }, 3000);
+        }
+      } else {
+        setError(<span><WarningOutlined /> สลิปการชำระเงินไม่ถูกต้อง</span>);
       }
     } catch (error) {
-      setError("❌ ไม่สามารถทำการชำระเงินได้", error);
+      // กรณีเกิดข้อผิดพลาด
+      setError(
+        <span><StopOutlined /> ไม่สามารถยืนยันการชำระเงินได้</span>
+      );
+    } finally {
+      setIsValidatingSlip(false);
     }
   };
 
@@ -117,13 +189,15 @@ const CartPage = () => {
         </h1>
 
         {cart.length === 0 ? (
-          <p className="text-gray-500 mt-4">ไม่มีสินค้าในตะกร้า</p>
+          <p className="text-gray-500 mt-4">
+            <InboxOutlined /> ไม่มีสินค้าในตะกร้า
+          </p>
         ) : (
           <>
             <div className="mt-6 flex flex-col gap-4">
               {cart.map((item) => (
                 <div
-                  key={`${item.id}-${item.optionId}`}
+                  key={item._id}  // ใช้ item.id เพื่อเป็น key เฉพาะของแต่ละรายการสินค้า
                   className="flex items-center justify-between border-b py-4"
                 >
                   <img
@@ -136,12 +210,6 @@ const CartPage = () => {
                     <h2 className="font-semibold text-lg text-black">
                       {item.name}
                     </h2>
-                    <p className="text-sm text-black">
-                      ตัวเลือก :{" "}
-                      <span className="font-bold text-[#A31D1D]">
-                        {item.optionId}
-                      </span>
-                    </p>
                     <p className="text-lg font-bold text-[#A31D1D]">
                       ฿{item.price}
                     </p>
@@ -154,7 +222,7 @@ const CartPage = () => {
                   <div className="flex items-center gap-2">
                     <button
                       className="px-2 py-1 bg-gray-200 hover:bg-gray-300 transition rounded-lg"
-                      onClick={() => decreaseQuantity(item.id, item.optionId)}
+                      onClick={() => decreaseQuantity(item._id)} // ใช้ item.id
                     >
                       <MinusOutlined />
                     </button>
@@ -162,12 +230,11 @@ const CartPage = () => {
                       {item.quantity}
                     </span>
                     <button
-                      className={`px-2 py-1 transition rounded-lg ${
-                        item.quantity >= item.stock
+                      className={`px-2 py-1 transition rounded-lg ${item.quantity >= item.stock
                           ? "bg-gray-300 cursor-not-allowed"
                           : "bg-gray-200 hover:bg-gray-300"
-                      }`}
-                      onClick={() => increaseQuantity(item.id, item.optionId)}
+                        }`}
+                      onClick={() => increaseQuantity(item._id)} // ใช้ item.id
                       disabled={item.quantity >= item.stock}
                     >
                       <PlusOutlined />
@@ -176,7 +243,7 @@ const CartPage = () => {
 
                   <button
                     className="text-red-600 hover:text-red-800 ml-4"
-                    onClick={() => removeFromCart(item.id, item.optionId)}
+                    onClick={() => removeFromCart(item._id)} // ใช้ item.id
                   >
                     <DeleteOutlined />
                   </button>
@@ -208,23 +275,51 @@ const CartPage = () => {
                 </div>
                 {copySuccess && (
                   <p className="text-sm text-green-600 mt-1">
-                    ✅ คัดลอกสำเร็จ!
+                    <CheckCircleOutlined /> คัดลอกสำเร็จ!
                   </p>
                 )}
                 <p className="text-gray-700">
                   ชื่อบัญชี : {ownerBankDetails.accountName}
                 </p>
+                <div className="mt-4">
+                  <p className="text-gray-700 mb-2">แนบหลักฐานการชำระเงิน</p>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    onChange={handleFileChange}
+                    className="w-full"
+                  />
+                  {fileError && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {fileError}
+                    </p>
+                  )}
+                  {slipFile && (
+                    <p className="text-green-500 text-sm mt-1">
+                      <CheckCircleOutlined /> อัพโหลดไฟล์: {slipFile.name}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <button
-                className="mt-4 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-800 transition w-full"
-                onClick={handleCheckout}
-              >
-                ยืนยันการชำระเงิน
-              </button>
+              {isValidatingSlip ? (
+                <button
+                  className="mt-4 bg-gray-400 text-white py-3 rounded-lg font-semibold transition w-full"
+                  disabled
+                >
+                  <LoadingOutlined /> กำลังตรวจสอบ...
+                </button>
+              ) : (
+                <button
+                  className="mt-4 bg-green-600 hover:bg-green-800 text-white py-3 rounded-lg font-semibold transition w-full"
+                  onClick={handleCheckout}
+                >
+                  ยืนยันการชำระเงิน
+                </button>
+              )}
 
               {error && (
-                <p className="text-red-600 mt-2 text-center">{error}</p>
+                <p className="mt-2 text-center">{error}</p>
               )}
             </div>
           </>

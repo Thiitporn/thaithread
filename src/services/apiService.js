@@ -14,6 +14,7 @@ export const registerUser = async (userData) => {
   const { data } = await api.post("/auth/register", userData);
   return data;
 };
+
 export const getAllUsers = async () => {
   try {
     const { data } = await api.get("/auth"); // Adjust API endpoint if needed
@@ -23,6 +24,7 @@ export const getAllUsers = async () => {
     throw error;
   }
 };
+
 export const loginUser = async (credentials) => {
   const { data } = await api.post("/auth/login", credentials);
   return data;
@@ -40,38 +42,58 @@ export const getAllProducts = async () => {
 
 export const getProductById = async (id) => {
   const { data } = await api.get(`/products/${id}`);
-
   return data;
 };
-//delete product
+
+// Delete product
 export const deleteProduct = async (id) => {
   const data = await api.delete(`/products/${id}`);
   return data;
 };
+
 export const addProduct = async (productData) => {
   const { data } = await api.post("/products", productData);
   return data;
 };
 
 // 🔹 CART
+// ดึงข้อมูลตะกร้าสินค้าของผู้ใช้
 export const getUserCart = async (userId) => {
-  const { data } = await api.get(`/cart/${userId}`);
-  return data;
+  try {
+    const { data } = await api.get(`/cart/${userId}`);
+    return data;
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการดึงข้อมูลตะกร้าสินค้า:", error);
+    throw error;
+  }
 };
 
+// เพิ่มสินค้าลงตะกร้า
 export const addToCart = async (userId, productId, quantity) => {
-  const { data } = await api.post("/cart/add", { userId, productId, quantity });
-  return data;
+  try {
+    const { data } = await api.post("/cart/add", { userId, productId, quantity });
+    return data;
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตะกร้า:", error);
+    throw error;
+  }
 };
 
+// ลบสินค้าออกจากตะกร้า 
 export const removeFromCart = async (userId, productId) => {
-  await api.delete(`/cart/${userId}/${productId}`);
+  try {
+    await api.delete(`/cart/${userId}/${productId}`);
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการลบสินค้าออกจากตะกร้า:", error);
+    throw error; 
+  }
 };
 
 // 🔹 ORDERS
+// สร้างคำสั่งซื้อ
 export const placeOrder = async (userId, totalPrice) => {
   if (!userId || !totalPrice) {
-    throw new Error("Missing required parameters: userId or totalPrice");
+    throw new Error("❌ ข้อมูลไม่ครบถ้วน: ต้องระบุ userId และ totalPrice"); 
   }
 
   try {
@@ -79,18 +101,18 @@ export const placeOrder = async (userId, totalPrice) => {
       "/orders/checkout",
       {
         userId,
-        totalPrice: parseInt(totalPrice, 10), // Ensure totalPrice is an integer
+        totalPrice: parseInt(totalPrice, 10), // แปลงราคาเป็นตัวเลขจำนวนเต็ม
       },
       {
         headers: {
-          "Content-Type": "application/json", // กำหนด Content-Type เป็น JSON
+          "Content-Type": "application/json"
         },
       }
     );
     return data;
   } catch (error) {
     console.error(
-      "Error placing order:",
+      "❌ เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ:",
       error.response ? error.response.data : error.message
     );
     throw error;
@@ -101,6 +123,7 @@ export const getUserOrders = async (userId) => {
   const { data } = await api.get(`/orders/${userId}`);
   return data;
 };
+
 export const getOrder = async () => {
   const { data } = await api.get(`/orders`);
   return data;
@@ -187,9 +210,7 @@ export const getCart = async (userId) => {
   }
 };
 
-// In apiService.js
-
-// Reset Password
+// 🔹 RESET PASSWORD
 export const resetPassword = async (email, newPassword) => {
   try {
     const { data } = await api.put("/auth/resetpassword", {
@@ -203,7 +224,7 @@ export const resetPassword = async (email, newPassword) => {
   }
 };
 
-// Update Profile
+// 🔹 UPDATE PROFILE
 export const updateProfile = async (id, name, email) => {
   try {
     const { data } = await api.put(`/auth/updateprofile/${id}`, {
@@ -217,24 +238,35 @@ export const updateProfile = async (id, name, email) => {
   }
 };
 
-// Delete User
+// 🔹 DELETE USER
 export const deleteUser = async (id) => {
   try {
     const { data } = await api.delete(`/auth/delete/${id}`);
     return data;
-  } catch (error) {
+  } catch (error)    {
     console.error("Error deleting user:", error);
     throw error;
   }
 };
 
-//find user by id
+// 🔹 FIND USER BY ID
 export const findUserById = async (id) => {
   try {
     const { data } = await api.get(`/auth/${id}`);
     return data;
   } catch (error) {
     console.error("Error finding user:", error);
+    throw error;
+  }
+};
+
+// 🔹 VALIDATE SLIP (ใหม่)
+export const validateSlip = async (slipData) => {
+  try {
+    const { data } = await api.post("/payment/validate-slip", slipData);
+    return data;
+  } catch (error) {
+    console.error("Error validating slip:", error);
     throw error;
   }
 };

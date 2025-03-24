@@ -5,17 +5,23 @@ import PropTypes from "prop-types";
 
 // ProtectedRoute component that checks user roles
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  const role = user.role;
-  console.log("User Role from ProtectedRoute:", role); // Log the role for debugging
-  // If the user is not authenticated or doesn't have the required role, redirect
-  if (!user || !allowedRoles.includes(role)) {
-    return <Navigate to="/" replace />;
+  // ดึงข้อมูลแยกส่วนจาก localStorage
+  const userName = localStorage.getItem("userName");
+  const userRole = localStorage.getItem("userRole");
+
+  // เพิ่ม console.log เพื่อตรวจสอบค่า
+  console.log("userName:", userName);
+  console.log("userRole:", userRole);
+  console.log("allowedRoles:", allowedRoles);
+
+  // ตรวจสอบการเข้าถึง
+  if (!userName || !userRole || !allowedRoles.includes(userRole)) {
+    return <Navigate to="/login" replace />;
   }
 
-  // If user has the required role, allow access to the route
   return children;
 };
+
 ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
   allowedRoles: PropTypes.arrayOf(PropTypes.string).isRequired,

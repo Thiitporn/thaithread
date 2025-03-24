@@ -5,6 +5,8 @@ import {
   SettingOutlined,
   ShoppingCartOutlined,
   UserOutlined,
+  AppstoreOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import {
   getAllUsers,
@@ -56,7 +58,7 @@ const AdminPanel = () => {
   const handleDeleteProduct = async (id) => {
     try {
       await deleteProduct(id); // Call the deleteProduct API function
-      setProducts(products.filter((product) => product.id !== id)); // Update local state
+      fetchData(); // Fetch products again to update the list
     } catch (error) {
       console.error("Error deleting product:", error);
     }
@@ -68,7 +70,7 @@ const AdminPanel = () => {
 
       <div className="p-8">
         <h1 className="text-3xl font-bold text-[#6D2323]">
-          ⚙️ ระบบจัดการเว็บไซต์ (Admin)
+          <SettingOutlined /> ระบบจัดการเว็บไซต์ (Admin)
         </h1>
 
         {/* ✅ ดูรายชื่อสมาชิก */}
@@ -83,7 +85,7 @@ const AdminPanel = () => {
               {users.map((user) => (
                 <li
                   key={user.id}
-                  className="flex justify-between bg-white p-3 rounded-md shadow-sm mt-2"
+                  className="flex justify-between bg-white p-3 rounded-md shadow-sm mt-2 text-[#000000]"
                 >
                   <span>
                     {user.name} - {user.email} ({user.role})
@@ -112,7 +114,7 @@ const AdminPanel = () => {
               {orders.map((order) => (
                 <li
                   key={order.id}
-                  className="flex justify-between bg-white p-3 rounded-md shadow-sm mt-2"
+                  className="flex justify-between bg-white p-3 rounded-md shadow-sm mt-2 text-[#000000]"
                 >
                   <span>
                     คำสั่งซื้อ #{order._id} - {order.customer} (฿
@@ -147,9 +149,9 @@ const AdminPanel = () => {
                   <p className="text-[#A31D1D] font-semibold">
                     ฿{product.price}
                   </p>
-                  <p className="text-gray-600">สต็อก: {product.stock} ชิ้น</p>
+                  <p className="text-gray-600">สต็อก : {product.stock} ชิ้น</p>
                   <button
-                    className="w-full mt-2 bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition"
+                    className="w-full mt-2 bg-[#A31D1D] text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition "
                     onClick={() => handleDeleteProduct(product._id)}
                   >
                     <DeleteOutlined /> ลบสินค้า

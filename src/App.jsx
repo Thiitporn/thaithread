@@ -3,7 +3,6 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
 } from "react-router-dom";
 
 import Home from "./pages/Home";
@@ -18,23 +17,31 @@ import ResetPassword from "./pages/ResetPassword";
 import EditProfile from "./pages/EditProfile";
 import AdminPanel from "./pages/Admin/AdminPanel";
 import StoreOwnerPage from "./pages/StoreOwnerPage";
-import ProtectedRoute from "./ProtectedRoute"; // Import ProtectedRoute
+import ProtectedRoute from "./ProtectedRoute";
 
-// ✅ สร้าง Context สำหรับตะกร้าสินค้า
+// สร้าง Context
 export const CartContext = createContext();
-
-// ✅ สร้าง Context สำหรับข้อมูลผู้ใช้
 export const UserContext = createContext();
 
 function App() {
   const [cart, setCart] = useState([]);
-  const [user, setUser] = useState(null); // ✅ เก็บข้อมูลผู้ใช้ (Admin, Owner, Customer)
+  const [user, setUser] = useState({
+    name: "",
+    role: "",
+    id: ""
+  });
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedRole = localStorage.getItem("role");
-    if (storedUser) {
-      setUser({ ...JSON.parse(storedUser), role: storedRole });
+    const userName = localStorage.getItem("userName");
+    const userRole = localStorage.getItem("userRole");
+    const userId = localStorage.getItem("userId");
+
+    if (userName && userRole && userId) {
+      setUser({
+        name: userName,
+        role: userRole,
+        id: userId,
+      });
     }
   }, []);
 
@@ -43,39 +50,29 @@ function App() {
       <CartContext.Provider value={{ cart, setCart }}>
         <Router>
           <Routes>
-            {/* Public Routes */}
             <Route path="/" element={<Home />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/product-detail/:id" element={<ProductDetail />} />
+            <Route path="/cart" element={<CartPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/edit-profile" element={<EditProfile />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/product-detail/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<CartPage />} />
-
-            {/* Protected Routes */}
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminPanel />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/store-owner"
-              element={
-                <ProtectedRoute allowedRoles={["storeOwner"]}>
-                  <StoreOwnerPage />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Redirect to Home if route doesn't exist */}
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/edit-profile" element={
+              <ProtectedRoute allowedRoles={["customer", "merchant", "admin"]}>
+                <EditProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminPanel />
+              </ProtectedRoute>
+            } />
+            <Route path="/store-owner" element={
+              <ProtectedRoute allowedRoles={["merchant"]}>
+                <StoreOwnerPage />
+              </ProtectedRoute>
+            } />
           </Routes>
         </Router>
       </CartContext.Provider>

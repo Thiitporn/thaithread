@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DeleteOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import { DeleteOutlined, CheckCircleOutlined, FileTextOutlined } from "@ant-design/icons";
 
 // สถานะของคำสั่งซื้อ
 
@@ -28,7 +28,9 @@ const ManageOrders = () => {
 
             {/* ✅ รายการคำสั่งซื้อ */}
             <div className="mt-8">
-                <h2 className="text-2xl font-bold text-[#6D2323]">📋 รายการคำสั่งซื้อ</h2>
+                <h2 className="text-2xl font-bold text-[#6D2323]">
+                    <FileTextOutlined /> รายการคำสั่งซื้อ
+                </h2>
                 {orders.map((order) => (
                     <div key={order.id} className="border p-4 rounded-lg shadow-md bg-white mt-4">
                         <h3 className="text-lg font-bold">คำสั่งซื้อ #{order.id}</h3>

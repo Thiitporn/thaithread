@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, FileTextOutlined } from "@ant-design/icons";
 
 // หน้าจัดการผู้ใช้
 
@@ -74,7 +74,9 @@ const ManageUsers = () => {
 
             {/* ✅ รายการผู้ใช้ */}
             <div className="mt-8">
-                <h2 className="text-2xl font-bold text-[#6D2323]">📋 รายการผู้ใช้</h2>
+                <h2 className="text-2xl font-bold text-[#6D2323]">
+                    <FileTextOutlined /> รายการผู้ใช้
+                </h2>
                 {users.map((user) => (
                     <div key={user.id} className="border p-4 rounded-lg shadow-md bg-white mt-4">
                         <h3 className="text-lg font-bold">{user.name} ({user.role})</h3>

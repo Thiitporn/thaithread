@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DeleteOutlined } from "@ant-design/icons";
+import { DeleteOutlined, UnorderedListOutlined, AppstoreOutlined, CloseCircleOutlined, CheckCircleOutlined, LoadingOutlined } from "@ant-design/icons";
 import { Card, Button } from "antd";
 import {
   getAllProducts,
@@ -32,10 +32,9 @@ const StoreOwnerPage = () => {
     setLoading(true);
     try {
       const data = await getAllProducts();
-
       setProducts(data);
     } catch (err) {
-      setError("❌ ไม่สามารถโหลดสินค้าได้");
+      setError(<span><CloseCircleOutlined /> ไม่สามารถโหลดสินค้าได้</span>);
     }
     setLoading(false);
   };
@@ -43,20 +42,24 @@ const StoreOwnerPage = () => {
   // ✅ Handle File Upload
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      setError(<span><CloseCircleOutlined /> กรุณาเลือกไฟล์รูปภาพ</span>);
+      return;
+    }
 
     try {
       setLoading(true);
       const imageUrl = await uploadImageAndCreateProduct(newProduct, file); // Using uploadImageAndCreateProduct to upload image and create product
-      setSuccessMessage("✅ อัปโหลดรูปสำเร็จ!");
+      setSuccessMessage(<span><CheckCircleOutlined /> อัปโหลดรูปสำเร็จ!</span>);
       setNewProduct({
         ...newProduct,
         image: imageUrl, // Save image URL from the response
       });
     } catch (err) {
-      setError("❌ อัปโหลดรูปภาพไม่สำเร็จ");
+      setError(<span><CloseCircleOutlined /> อัปโหลดรูปภาพไม่สำเร็จ</span>);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // ✅ Handle Product Form Submission
@@ -68,14 +71,14 @@ const StoreOwnerPage = () => {
       !newProduct.category ||
       !newProduct.image
     ) {
-      setError("❌ กรุณากรอกข้อมูลให้ครบทุกช่อง!");
+      setError(<span><CloseCircleOutlined /> กรุณากรอกข้อมูลให้ครบทุกช่อง!</span>);
       return;
     }
 
     try {
       setLoading(true);
       await uploadImageAndCreateProduct(newProduct, newProduct.image);
-      setSuccessMessage("✅ สินค้าถูกเพิ่มเรียบร้อย!");
+      setSuccessMessage(<span><CheckCircleOutlined /> สินค้าถูกเพิ่มเรียบร้อย!</span>);
       setNewProduct({
         name: "",
         description: "",
@@ -87,15 +90,16 @@ const StoreOwnerPage = () => {
       });
       fetchProducts(); // Reload products
     } catch (err) {
-      setError("❌ สร้างสินค้าไม่สำเร็จ");
+      setError(<span><CloseCircleOutlined /> สร้างสินค้าไม่สำเร็จ</span>);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold text-[#6D2323]">
-        📦 จัดการสินค้า (เจ้าของร้าน)
+        <AppstoreOutlined /> จัดการสินค้า (เจ้าของร้าน)
       </h1>
 
       {error && <p className="text-red-600">{error}</p>}
@@ -168,16 +172,18 @@ const StoreOwnerPage = () => {
           />
 
           <button type="submit" className="btn-red w-full mt-4">
-            {loading ? "⏳ กำลังเพิ่มสินค้า..." : "เพิ่มสินค้า"}
+            {loading ? <LoadingOutlined /> : "เพิ่มสินค้า"}
           </button>
         </form>
       </div>
 
       {/* ✅ รายการสินค้า */}
       <div className="mt-8">
-        <h2 className="text-2xl font-bold text-[#6D2323]">📋 รายการสินค้า</h2>
+        <h2 className="text-2xl font-bold text-[#6D2323]">
+          <UnorderedListOutlined /> รายการสินค้า
+        </h2>
         {loading ? (
-          <p>⏳ กำลังโหลดสินค้า...</p>
+          <p><LoadingOutlined /> กำลังโหลดสินค้า...</p>
         ) : (
           <div className="product-list">
             {products.map((product) => (
@@ -186,7 +192,6 @@ const StoreOwnerPage = () => {
                 style={{ width: 240, margin: "10px" }}
                 cover={<img alt={product.name} src={product.image} />}
                 actions={[
-                  // eslint-disable-next-line react/jsx-key
                   <Button type="primary" danger icon={<DeleteOutlined />}>
                     ลบสินค้า
                   </Button>,

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, AppstoreOutlined, FileTextOutlined } from "@ant-design/icons";
 
 const ManageProducts = () => {
     // ✅ สถานะของสินค้าทั้งหมด
@@ -37,7 +37,9 @@ const ManageProducts = () => {
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-bold text-[#6D2323]">📦 จัดการสินค้า (เจ้าของร้าน)</h1>
+            <h1 className="text-3xl font-bold text-[#6D2323]">
+                <AppstoreOutlined /> จัดการสินค้า (เจ้าของร้าน)
+            </h1>
 
             {/* ✅ ฟอร์มเพิ่มสินค้า */}
             <div className="bg-[#E5D0AC] p-6 mt-6 rounded-lg shadow-md">
@@ -59,7 +61,9 @@ const ManageProducts = () => {
 
             {/* ✅ รายการสินค้า */}
             <div className="mt-8">
-                <h2 className="text-2xl font-bold text-[#6D2323]">📋 รายการสินค้า</h2>
+                <h2 className="text-2xl font-bold text-[#6D2323]">
+                    <FileTextOutlined /> รายการสินค้า
+                </h2>
                 {products.map((product) => (
                     <div key={product.id} className="border p-4 rounded-lg shadow-md bg-white mt-4">
                         <img src={product.image} alt={product.name} className="w-full h-40 object-cover rounded-md" />
